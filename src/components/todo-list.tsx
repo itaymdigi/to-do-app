@@ -1,49 +1,88 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { TodoItem } from './todo-item'
 import { Todo } from '@/types/todo'
 import { AddTodoForm } from './add-todo-form'
+import { getTodos, addTodo, updateTodo, deleteTodo } from '@/lib/firebase-service'
 
 export function TodoList() {
   const [todos, setTodos] = useState<Todo[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const addTodo = (newTodo: Todo) => {
-    setTodos(prev => [...prev, newTodo])
+  useEffect(() => {
+    loadTodos()
+  }, [])
+
+  const loadTodos = async () => {
+    try {
+      const fetchedTodos = await getTodos()
+      setTodos(fetchedTodos)
+    } catch (error) {
+      console.error('Error loading todos:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const toggleTodo = (id: string) => {
-    setTodos(prev => prev.map(todo => 
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    ))
+  const handleAddTodo = async (newTodo: Omit<Todo, 'id'>) => {
+    try {
+      const addedTodo = await addTodo(newTodo)
+      setTodos(prev => [addedTodo, ...prev])
+    } catch (error) {
+      console.error('Error adding todo:', error)
+    }
   }
 
-  const deleteTodo = (id: string) => {
-    setTodos(prev => prev.filter(todo => todo.id !== id))
+  const handleToggleTodo = async (id: string) => {
+    try {
+      const todoToUpdate = todos.find(todo => todo.id === id)
+      if (!todoToUpdate) return
+
+      await updateTodo(id, { completed: !todoToUpdate.completed })
+      setTodos(prev => prev.map(todo =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      ))
+    } catch (error) {
+      console.error('Error toggling todo:', error)
+    }
   }
 
-  const editTodo = (id: string, updatedText: string) => {
-    setTodos(prev => prev.map(todo => 
-      todo.id === id ? { ...todo, text: updatedText } : todo
-    ))
+  const handleDeleteTodo = async (id: string) => {
+    try {
+      await deleteTodo(id)
+      setTodos(prev => prev.filter(todo => todo.id !== id))
+    } catch (error) {
+      console.error('Error deleting todo:', error)
+    }
+  }
+
+  const handleEditTodo = async (id: string, updatedText: string) => {
+    try {
+      await updateTodo(id, { text: updatedText })
+      setTodos(prev => prev.map(todo =>
+        todo.id === id ? { ...todo, text: updatedText } : todo
+      ))
+    } catch (error) {
+      console.error('Error editing todo:', error)
+    }
+  }
+
+  if (loading) {
+    return <div className="flex justify-center p-4">Loading...</div>
   }
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <AddTodoForm onAdd={addTodo} />
+      <AddTodoForm onAdd={handleAddTodo} />
       <div className="space-y-2">
         {todos.map(todo => (
           <TodoItem
             key={todo.id}
             todo={todo}
-            onToggle={toggleTodo}
-            onDelete={deleteTodo}
-            onEdit={(id) => {
-              const updatedText = prompt('Edit todo:', todo.text)
-              if (updatedText) {
-                editTodo(id, updatedText)
-              }
-            }}
+            onToggle={handleToggleTodo}
+            onDelete={handleDeleteTodo}
+            onEdit={handleEditTodo}
           />
         ))}
       </div>

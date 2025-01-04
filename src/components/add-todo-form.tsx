@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { Todo, Priority } from '@/types/todo'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
 
 interface AddTodoFormProps {
-  onAdd: (newTodo: Todo) => void
+  onAdd: (newTodo: Omit<Todo, 'id'>) => void
 }
 
 export function AddTodoForm({ onAdd }: AddTodoFormProps) {
@@ -15,25 +17,25 @@ export function AddTodoForm({ onAdd }: AddTodoFormProps) {
     e.preventDefault()
     if (!text.trim()) return
 
-    const newTodo: Todo = {
-      id: Date.now().toString(),
+    const newTodo: Omit<Todo, 'id'> = {
       text: text.trim(),
       completed: false,
       createdAt: new Date(),
       priority,
     }
+    
     onAdd(newTodo)
     setText('')
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex gap-2">
-      <input
+      <Input
         type="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Add a new todo"
-        className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="flex-1"
         required
       />
       <select 
@@ -45,12 +47,9 @@ export function AddTodoForm({ onAdd }: AddTodoFormProps) {
         <option value="medium">Medium</option>
         <option value="high">High</option>
       </select>
-      <button 
-        type="submit"
-        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-      >
+      <Button type="submit">
         Add
-      </button>
+      </Button>
     </form>
   )
 } 

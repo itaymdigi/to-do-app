@@ -7,7 +7,7 @@ interface TodoItemProps {
   todo: Todo;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
-  onEdit: (id: string) => void;
+  onEdit: (id: string, updatedText: string) => void;
 }
 
 const priorityColors: Record<Priority, string> = {
@@ -17,6 +17,13 @@ const priorityColors: Record<Priority, string> = {
 }
 
 export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
+  const handleEdit = () => {
+    const updatedText = prompt('Edit todo:', todo.text)
+    if (updatedText) {
+      onEdit(todo.id, updatedText)
+    }
+  }
+
   return (
     <div className="flex items-center space-x-4 p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
       <Checkbox
@@ -47,7 +54,7 @@ export function TodoItem({ todo, onToggle, onDelete, onEdit }: TodoItemProps) {
         </div>
       </div>
       <button
-        onClick={() => onEdit(todo.id)}
+        onClick={handleEdit}
         className="text-gray-400 hover:text-blue-500 transition-colors"
       >
         <Pencil className="h-5 w-5" />
