@@ -5,12 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Todo } from "@/types/todo";
 import { Trash2 } from "lucide-react";
 
 export default function TodoList({ todos }: { todos: Todo[] }) {
-  const [newTodo, setNewTodo] = useState("");
+  const [newTodo, setNewTodo] = useState<string>("");
   const { toast } = useToast();
 
   const addTodo = async (e: React.FormEvent) => {
@@ -70,58 +70,60 @@ export default function TodoList({ todos }: { todos: Todo[] }) {
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-lg">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">My Tasks</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={addTodo} className="flex gap-2 mb-6">
-          <Input
-            type="text"
-            value={newTodo}
-            onChange={(e) => setNewTodo(e.target.value)}
-            placeholder="What needs to be done?"
-            className="flex-1"
-          />
-          <Button type="submit" className="bg-primary hover:bg-primary/90">
-            Add Task
-          </Button>
-        </form>
+    <div className="space-y-6">
+      <form onSubmit={addTodo} className="flex gap-2">
+        <Input
+          type="text"
+          value={newTodo}
+          onChange={(e) => setNewTodo(e.target.value)}
+          placeholder="What needs to be done?"
+          className="flex-1 bg-white/50 backdrop-blur-sm border-slate-200"
+        />
+        <Button 
+          type="submit"
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+        >
+          Add Task
+        </Button>
+      </form>
 
-        <div className="space-y-3">
-          {todos.map((todo) => (
+      <div className="space-y-3">
+        {todos.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            No tasks yet. Add one above!
+          </div>
+        ) : (
+          todos.map((todo) => (
             <div
               key={todo.id}
-              className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/10 transition-colors"
+              className="group flex items-center gap-3 p-4 rounded-lg border border-slate-200 bg-white/50 backdrop-blur-sm hover:shadow-md transition-all"
             >
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  checked={todo.completed}
-                  onCheckedChange={() => toggleTodo(todo.id, todo.completed)}
-                  className="h-5 w-5"
-                />
-                <span 
-                  className={`${
-                    todo.completed 
-                      ? 'line-through text-muted-foreground' 
-                      : 'text-foreground'
-                  }`}
-                >
-                  {todo.text}
-                </span>
-              </div>
+              <Checkbox
+                checked={todo.completed}
+                onCheckedChange={() => toggleTodo(todo.id, todo.completed)}
+                className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+              />
+              <span 
+                className={`flex-1 ${
+                  todo.completed 
+                    ? 'line-through text-muted-foreground' 
+                    : ''
+                }`}
+              >
+                {todo.text}
+              </span>
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={() => deleteTodo(todo.id)}
-                className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                className="opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 transition-all"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          ))
+        )}
+      </div>
+    </div>
   );
 } 

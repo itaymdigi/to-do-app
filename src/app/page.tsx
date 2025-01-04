@@ -5,6 +5,7 @@ import TodoList from "@/components/TodoList"
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Todo } from '@/types/todo'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([])
@@ -24,13 +25,20 @@ export default function Home() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-slate-50 py-12">
-      <div className="container max-w-4xl mx-auto px-4">
-        <h1 className="text-4xl font-bold text-center mb-8 text-slate-900">
-          Todo App
-        </h1>
-        <TodoList todos={todos} />
-      </div>
+    <main className="max-w-3xl mx-auto">
+      <Card className="border-none shadow-lg bg-white/50 backdrop-blur-sm">
+        <CardHeader className="text-center pb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            Todo App
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Organize your tasks efficiently
+          </p>
+        </CardHeader>
+        <CardContent>
+          <TodoList todos={todos} />
+        </CardContent>
+      </Card>
     </main>
   )
 }
