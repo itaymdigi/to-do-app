@@ -2,27 +2,57 @@
 
 import { useEffect, useState } from 'react'
 import TodoList from "@/components/TodoList"
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'
+import { collection, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Todo } from '@/types/todo'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { useToast } from '@/hooks/use-toast'
 
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([])
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
   useEffect(() => {
     const q = query(collection(db, "todos"), orderBy("createdAt", "desc"))
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const todosData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Todo[]
-      setTodos(todosData)
-    })
+    try {
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const todosData = snapshot.docs.map(doc => {
+          const data = doc.data()
+          const createdAt = data.createdAt instanceof Timestamp 
+            ? data.createdAt.toDate().toISOString()
+            : new Date().toISOString()
 
-    return () => unsubscribe()
-  }, [])
+          return {
+            id: doc.id,
+            ...data,
+            createdAt,
+          } as Todo
+        })
+        setTodos(todosData)
+        setLoading(false)
+      }, (error) => {
+        console.error("Error fetching todos:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load todos. Please try again later.",
+          variant: "destructive",
+        })
+        setLoading(false)
+      })
+
+      return () => unsubscribe()
+    } catch (error) {
+      console.error("Error setting up todos listener:", error)
+      toast({
+        title: "Error",
+        description: "Failed to initialize todo list. Please refresh the page.",
+        variant: "destructive",
+      })
+      setLoading(false)
+    }
+  }, [toast])
 
   return (
     <main className="max-w-3xl mx-auto">
@@ -36,7 +66,13 @@ export default function Home() {
           </p>
         </CardHeader>
         <CardContent>
-          <TodoList todos={todos} />
+          {loading ? (
+            <div className="text-center py-6 text-muted-foreground">
+              Loading todos...
+            </div>
+          ) : (
+            <TodoList todos={todos} />
+          )}
         </CardContent>
       </Card>
     </main>

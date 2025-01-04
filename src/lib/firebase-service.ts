@@ -1,34 +1,60 @@
 import { db } from './firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy } from 'firebase/firestore';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  getDocs, 
+  query, 
+  orderBy,
+  serverTimestamp,
+  Timestamp 
+} from 'firebase/firestore';
 import { Todo } from '@/types/todo';
 
 const COLLECTION_NAME = 'todos';
 
-export async function addTodo(todo: Omit<Todo, 'id'>) {
+export async function addTodo(todo: Omit<Todo, 'id' | 'createdAt'>) {
   const docRef = await addDoc(collection(db, COLLECTION_NAME), {
     ...todo,
-    createdAt: new Date().toISOString()
+    createdAt: serverTimestamp(),
   });
-  return { ...todo, id: docRef.id };
+  return docRef.id;
 }
 
-export async function updateTodo(id: string, updates: Partial<Todo>) {
+export async function updateTodo(id: string, updates: Partial<Omit<Todo, 'id' | 'createdAt'>>) {
   const todoRef = doc(db, COLLECTION_NAME, id);
   await updateDoc(todoRef, updates);
-  return { id, ...updates };
 }
 
 export async function deleteTodo(id: string) {
   const todoRef = doc(db, COLLECTION_NAME, id);
   await deleteDoc(todoRef);
-  return id;
 }
 
 export async function getTodos() {
-  const todosQuery = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
-  const querySnapshot = await getDocs(todosQuery);
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  })) as Todo[];
+  try {
+    const todosQuery = query(
+      collection(db, COLLECTION_NAME), 
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(todosQuery);
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      const createdAt = data.createdAt instanceof Timestamp 
+        ? data.createdAt.toDate().toISOString()
+        : new Date().toISOString();
+
+      return {
+        id: doc.id,
+        ...data,
+        createdAt,
+      } as Todo;
+    });
+  } catch (error) {
+    console.error('Error fetching todos:', error);
+    throw error;
+  }
 } 
