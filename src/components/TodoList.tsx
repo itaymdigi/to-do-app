@@ -1,37 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { addTodo, updateTodo, deleteTodo } from "@/lib/firebase-service";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Todo, Priority } from "@/types/todo";
-import { 
-  Trash2, 
-  Calendar,
-  AlertCircle,
-  CheckCircle2,
-  Clock
-} from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Trash2, Calendar } from "lucide-react";
 
 interface TodoListProps {
   todos: Todo[];
 }
-
-const priorityConfig = {
-  low: { color: "bg-blue-100 text-blue-800", icon: Clock },
-  medium: { color: "bg-yellow-100 text-yellow-800", icon: AlertCircle },
-  high: { color: "bg-red-100 text-red-800", icon: AlertCircle },
-} as const;
 
 export default function TodoList({ todos }: TodoListProps) {
   const [newTodo, setNewTodo] = useState<string>("");
@@ -94,94 +72,71 @@ export default function TodoList({ todos }: TodoListProps) {
 
   return (
     <div className="space-y-6">
-      <Card className="p-4">
-        <form onSubmit={handleAddTodo} className="flex gap-2">
-          <Input
-            type="text"
-            value={newTodo}
-            onChange={(e) => setNewTodo(e.target.value)}
-            placeholder="What needs to be done?"
-            className="flex-1"
-          />
-          <Select
-            value={priority}
-            onValueChange={(value: Priority) => setPriority(value)}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Select priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Low Priority</SelectItem>
-              <SelectItem value="medium">Medium Priority</SelectItem>
-              <SelectItem value="high">High Priority</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button type="submit">
-            Add Task
-          </Button>
-        </form>
-      </Card>
+      <form onSubmit={handleAddTodo} className="flex gap-2">
+        <Input
+          type="text"
+          value={newTodo}
+          onChange={(e) => setNewTodo(e.target.value)}
+          placeholder="What needs to be done?"
+          className="flex-1 bg-white/50 backdrop-blur-sm border-slate-200"
+        />
+        <select 
+          value={priority}
+          onChange={(e) => setPriority(e.target.value as Priority)}
+          className="px-3 py-2 rounded-md border border-slate-200 bg-white/50 backdrop-blur-sm"
+        >
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+        <Button 
+          type="submit"
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+        >
+          Add Task
+        </Button>
+      </form>
 
       <div className="space-y-3">
         {todos.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">
-            <div className="flex flex-col items-center gap-2">
-              <CheckCircle2 className="h-8 w-8 text-muted-foreground/50" />
-              <p>No tasks yet. Add one above!</p>
-            </div>
-          </Card>
+          <div className="text-center py-6 text-muted-foreground">
+            No tasks yet. Add one above!
+          </div>
         ) : (
-          todos.map((todo) => {
-            const priorityDetails = priorityConfig[todo.priority || 'low'];
-            const PriorityIcon = priorityDetails.icon;
-
-            return (
-              <Card
-                key={todo.id}
-                className={cn(
-                  "group flex items-center gap-3 p-4 transition-all",
-                  todo.completed && "bg-muted/50"
+          todos.map((todo) => (
+            <div
+              key={todo.id}
+              className="group flex items-center gap-3 p-4 rounded-lg border border-slate-200 bg-white/50 backdrop-blur-sm hover:shadow-md transition-all"
+            >
+              <Checkbox
+                checked={todo.completed}
+                onCheckedChange={() => handleToggleTodo(todo.id, todo.completed)}
+                className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+              />
+              <div className="flex-1 space-y-1">
+                <span className={todo.completed ? 'line-through text-muted-foreground' : ''}>
+                  {todo.text}
+                </span>
+                {todo.priority && (
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    todo.priority === 'high' ? 'bg-red-100 text-red-700' :
+                    todo.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-blue-100 text-blue-700'
+                  }`}>
+                    {todo.priority}
+                  </span>
                 )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeleteTodo(todo.id)}
+                className="opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 transition-all"
               >
-                <Checkbox
-                  checked={todo.completed}
-                  onCheckedChange={() => handleToggleTodo(todo.id, todo.completed)}
-                  className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-                />
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "font-medium",
-                      todo.completed && "line-through text-muted-foreground"
-                    )}>
-                      {todo.text}
-                    </span>
-                    <Badge 
-                      variant="secondary"
-                      className={cn(
-                        "flex items-center gap-1",
-                        priorityDetails.color
-                      )}
-                    >
-                      <PriorityIcon className="h-3 w-3" />
-                      {todo.priority}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Added {new Date(todo.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDeleteTodo(todo.id)}
-                  className="opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </Card>
-            );
-          })
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))
         )}
       </div>
     </div>
