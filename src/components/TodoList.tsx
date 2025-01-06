@@ -1,30 +1,27 @@
-import { useState, useEffect } from "react";
-import { addTodo, updateTodo, deleteTodo } from "@/lib/firebase-service";
+import { useState } from "react";
+import { db } from "@/lib/firebase";
+import { addDoc, deleteDoc, doc, updateDoc, collection } from "firebase/firestore";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Todo, Priority } from "@/types/todo";
-import { Trash2, Calendar } from "lucide-react";
+import { Todo } from "@/types/todo";
+import { Trash2 } from "lucide-react";
 
-interface TodoListProps {
-  todos: Todo[];
-}
-
-export default function TodoList({ todos }: TodoListProps) {
+export default function TodoList({ todos }: { todos: Todo[] }) {
   const [newTodo, setNewTodo] = useState<string>("");
-  const [priority, setPriority] = useState<Priority>("low");
   const { toast } = useToast();
 
-  const handleAddTodo = async (e: React.FormEvent) => {
+  const addTodo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTodo.trim()) return;
 
     try {
-      await addTodo({
-        text: newTodo.trim(),
+      await addDoc(collection(db, "todos"), {
+        text: newTodo,
         completed: false,
-        priority,
+        createdAt: new Date().toISOString(),
       });
       setNewTodo("");
       toast({
@@ -40,11 +37,13 @@ export default function TodoList({ todos }: TodoListProps) {
     }
   };
 
-  const handleToggleTodo = async (id: string, completed: boolean) => {
+  const toggleTodo = async (id: string, completed: boolean) => {
     try {
-      await updateTodo(id, { completed: !completed });
+      await updateDoc(doc(db, "todos", id), {
+        completed: !completed,
+      });
       toast({
-        description: `Task marked as ${!completed ? 'completed' : 'incomplete'}`,
+        description: `Todo marked as ${!completed ? 'completed' : 'incomplete'}`,
       });
     } catch (error) {
       toast({
@@ -55,9 +54,9 @@ export default function TodoList({ todos }: TodoListProps) {
     }
   };
 
-  const handleDeleteTodo = async (id: string) => {
+  const deleteTodo = async (id: string) => {
     try {
-      await deleteTodo(id);
+      await deleteDoc(doc(db, "todos", id));
       toast({
         description: "Todo deleted successfully",
       });
@@ -72,7 +71,7 @@ export default function TodoList({ todos }: TodoListProps) {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleAddTodo} className="flex gap-2">
+      <form onSubmit={addTodo} className="flex gap-2">
         <Input
           type="text"
           value={newTodo}
@@ -80,15 +79,6 @@ export default function TodoList({ todos }: TodoListProps) {
           placeholder="What needs to be done?"
           className="flex-1 bg-white/50 backdrop-blur-sm border-slate-200"
         />
-        <select 
-          value={priority}
-          onChange={(e) => setPriority(e.target.value as Priority)}
-          className="px-3 py-2 rounded-md border border-slate-200 bg-white/50 backdrop-blur-sm"
-        >
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-        </select>
         <Button 
           type="submit"
           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
@@ -110,27 +100,22 @@ export default function TodoList({ todos }: TodoListProps) {
             >
               <Checkbox
                 checked={todo.completed}
-                onCheckedChange={() => handleToggleTodo(todo.id, todo.completed)}
+                onCheckedChange={() => toggleTodo(todo.id, todo.completed)}
                 className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
               />
-              <div className="flex-1 space-y-1">
-                <span className={todo.completed ? 'line-through text-muted-foreground' : ''}>
-                  {todo.text}
-                </span>
-                {todo.priority && (
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    todo.priority === 'high' ? 'bg-red-100 text-red-700' :
-                    todo.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-blue-100 text-blue-700'
-                  }`}>
-                    {todo.priority}
-                  </span>
-                )}
-              </div>
+              <span 
+                className={`flex-1 ${
+                  todo.completed 
+                    ? 'line-through text-muted-foreground' 
+                    : ''
+                }`}
+              >
+                {todo.text}
+              </span>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => handleDeleteTodo(todo.id)}
+                onClick={() => deleteTodo(todo.id)}
                 className="opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 transition-all"
               >
                 <Trash2 className="h-4 w-4" />
